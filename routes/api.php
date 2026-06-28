@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\LoanController;
 use Illuminate\Support\Facades\Route;
 
 // rotte NON PROTETTE
@@ -23,6 +25,12 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('client')->group(function() {
         Route::post('CreateOrUpdateClient', [ClientController::class, 'CreateOrUpdateClient']);
         Route::get('clientIndex', [ClientController::class, 'clientIndex']);
+    });
+
+// rotte PRESTITI
+    Route::prefix('loans')->group(function () {
+        Route::post('CreateLoan', [LoanController::class, 'CreateLoan']);
+        Route::patch('returnLoan', [LoanController::class, 'returnLoan']);
     });
 
 });
