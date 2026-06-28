@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class BookController extends Controller
 {
     public function bookIndex() {
-        $books = Book::with('authors')->paginate(10);
+        $books = Book::with(['authors', 'editor'])->paginate(10);
 
         return response()->json([
             'books' => $books,
@@ -26,22 +26,29 @@ class BookController extends Controller
             'isbn' => 'required | string | max:255 | '.$uniqueIsbn,
             'synopsis' => 'required | string | max:255',
             'total_quantity' => 'required | integer | min:0',
+            'authors' => 'required | array | min:1',
+            'authors.*' => 'required | integer | distinct | exists:authors,id',
         ]);
+
+        $authors = $validated['authors'];
+        unset($validated['authors'], $validated['id']);
 
         if ($bookId !== null) {
             $book = Book::findOrFail($bookId);
             $book->update($validated);
+            $book->authors()->sync($authors);
 
             return response()->json([
-                'book' => $book,
+                'book' => $book->load(['authors', 'editor']),
                 'message' => 'Book updated successfully',
             ]);
         }
 
         $book = Book::create($validated);
+        $book->authors()->sync($authors);
 
         return response()->json([
-            'book' => $book,
+            'book' => $book->load(['authors', 'editor']),
             'message' => 'Book created successfully',
         ], 201);
     }
@@ -53,6 +60,14 @@ class BookController extends Controller
         return response()->json([
             'book' => $book,
             'message' => 'Book deleted successfully',
+        ]);
+    }
+
+    public function getBookById($id) {
+        $book = Book::with(['authors', 'editor'])->findOrFail($id);
+
+        return response()->json([
+            'book' => $book,
         ]);
     }
 }

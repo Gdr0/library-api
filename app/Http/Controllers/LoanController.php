@@ -12,7 +12,36 @@ use Illuminate\Validation\ValidationException;
 
 class LoanController extends Controller
 {
-    private const DAILY_BOOK_PRICE = 3;
+    private const DAILY_BOOK_PRICE = 1;
+
+    // elenco prestiti
+    public function loanIndex() {
+        $loans = Loan::with([
+            'client',
+            'status',
+            'documentType',
+            'books.authors',
+        ])->orderBy('created_at', 'desc')->paginate(10);
+
+        return response()->json([
+            'loans' => $loans,
+        ]);
+    }
+
+    // dettaglio singolo prestito
+    public function loanDetail($id) {
+        $loan = Loan::with([
+            'client',
+            'status',
+            'documentType',
+            'books.authors',
+            'fine',
+        ])->findOrFail($id);
+
+        return response()->json([
+            'loan' => $loan,
+        ]);
+    }
 
     public function CreateLoan(Request $request) {
         $validated = $request->validate([

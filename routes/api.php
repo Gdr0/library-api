@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\EditorController;
 use App\Http\Controllers\LoanController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,19 +20,35 @@ Route::middleware('auth:api')->group(function () {
 // rotte LIBRI
     Route::prefix('books')->group(function () {
         Route::get('bookIndex', [BookController::class, 'bookIndex']);
+        Route::get('getBookById/{id}', [BookController::class, 'getBookById']);
         Route::post('createOrUpdateBooks', [BookController::class, 'createOrUpdateBooks']);
         Route::delete('{id}', [BookController::class, 'softDelete']);
     });
+
 // rotte CLIENTI
     Route::prefix('client')->group(function() {
         Route::post('CreateOrUpdateClient', [ClientController::class, 'CreateOrUpdateClient']);
         Route::get('clientIndex', [ClientController::class, 'clientIndex']);
+        Route::get('getClientById/{id}', [ClientController::class, 'getClientById']);
     });
 
 // rotte PRESTITI
     Route::prefix('loans')->group(function () {
         Route::post('CreateLoan', [LoanController::class, 'CreateLoan']);
         Route::patch('returnLoan', [LoanController::class, 'returnLoan']);
+        Route::get('loanIndex', [LoanController::class, 'loanIndex']);
+        Route::get('loanDetail/{id}', [LoanController::class, 'loanDetail']);
     });
+
+    // rotte AUTORI
+    Route::prefix('authors')->group(function () {
+        Route::get('getAuthors', [AuthorController::class, 'getAuthors']);
+    });
+
+// rotte EDITORI
+    Route::prefix('editors')->group(function () {
+        Route::get('getEditors', [EditorController::class, 'getEditors']);
+    });
+
 
 });
