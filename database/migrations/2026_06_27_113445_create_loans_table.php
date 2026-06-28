@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('status_id')->constrained('loan_statuses');
             $table->foreignId('client_id')->constrained('clients');
+            $table->foreignId('document_type_id')->constrained('document_types');
+            $table->string('document_number');
             $table->date('started_at');
             $table->date('expiring_at');
             $table->date('returned_at')->nullable();

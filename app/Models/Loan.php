@@ -14,6 +14,8 @@ class Loan extends Model
     protected $fillable = [
         'status_id',
         'client_id',
+        'document_type_id',
+        'document_number',
         'started_at',
         'expiring_at',
         'returned_at',
@@ -36,6 +38,9 @@ class Loan extends Model
         }
         public function status() {
             return $this->belongsTo(LoanStatus::class);
+        }
+        public function documentType() {
+            return $this->belongsTo(DocumentType::class);
         }
         public function books(){
 

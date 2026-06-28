@@ -4,21 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Client extends Model
+class DocumentType extends Model
 {
-    use HasFactory, SoftDeletes;
-    
+    use HasFactory;
+
     protected $fillable = [
         'name',
-        'last_name',
-        'phone_number',
-        'email',
     ];
 
-    public function loans() {
+    public function loans(): HasMany
+    {
         return $this->hasMany(Loan::class);
     }
-
 }
