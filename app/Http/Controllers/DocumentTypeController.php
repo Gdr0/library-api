@@ -6,7 +6,7 @@ use App\Models\DocumentType;
 
 class DocumentTypeController extends Controller
 {
-    public function getDocumentTypes() {
+    public function index() {
         $documentTypes = DocumentType::orderBy('name')->get();
 
         return response()->json([

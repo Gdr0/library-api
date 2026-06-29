@@ -20,7 +20,7 @@ class LoanController extends Controller
     ) {}
 
     // elenco prestiti
-    public function loanIndex() {
+    public function index() {
         $loans = Loan::with([
             'client',
             'status',
@@ -35,7 +35,7 @@ class LoanController extends Controller
     }
 
     // dettaglio singolo prestito
-    public function loanDetail($id) {
+    public function show($id) {
         $loan = Loan::with([
             'client',
             'status',
@@ -50,8 +50,9 @@ class LoanController extends Controller
         ]);
     }
 
-    public function CreateLoan(Request $request) {
+    public function store(Request $request) {
         $clientId = $request->integer('client_id');
+        $startedAt = Carbon::today()->toDateString();
 
         $validated = $request->validate([
             // clienti
@@ -65,8 +66,7 @@ class LoanController extends Controller
             // prestito
             'document_type_id' => 'required | integer | exists:document_types,id',
             'document_number' => 'required | string | max:255',
-            'started_at' => 'required | date',
-            'expiring_at' => 'required | date | after:started_at',
+            'expiring_at' => 'required | date | after:today',
             // libri del prestito
             'books' => 'required | array | min:1',
             'books.*.book_id' => 'required | integer | distinct | exists:books,id',
@@ -74,7 +74,7 @@ class LoanController extends Controller
         ]);
 
         // transazione per evitare danni se qualcosa va storto
-        $loan = DB::transaction(function () use ($validated) {
+        $loan = DB::transaction(function () use ($startedAt, $validated) {
             // aggiorno/creo cliente
             $clientId = $this->loanService->resolveClientId($validated);
 
@@ -83,7 +83,7 @@ class LoanController extends Controller
                 'client_id' => $clientId,
                 'document_type_id' => $validated['document_type_id'],
                 'document_number' => $validated['document_number'],
-                'started_at' => $validated['started_at'],
+                'started_at' => $startedAt,
                 'expiring_at' => $validated['expiring_at'],
                 'closed_at' => null,
             ]);

@@ -20,39 +20,40 @@ Route::middleware('auth:api')->group(function () {
 
 // rotte LIBRI
     Route::prefix('books')->group(function () {
-        Route::get('bookIndex', [BookController::class, 'bookIndex']);
-        Route::get('getBookById/{id}', [BookController::class, 'getBookById']);
-        Route::post('createOrUpdateBooks', [BookController::class, 'createOrUpdateBooks']);
+        Route::get('', [BookController::class, 'index']);
+        Route::get('{id}', [BookController::class, 'show']);
+        Route::post('', [BookController::class, 'storeOrUpdate']);
         Route::delete('{id}', [BookController::class, 'softDelete']);
     });
 
 // rotte CLIENTI
-    Route::prefix('client')->group(function() {
-        Route::post('CreateOrUpdateClient', [ClientController::class, 'CreateOrUpdateClient']);
-        Route::get('clientIndex', [ClientController::class, 'clientIndex']);
-        Route::get('getClientById/{id}', [ClientController::class, 'getClientById']);
+    Route::prefix('clients')->group(function() {
+        Route::post('', [ClientController::class, 'storeOrUpdate']);
+        Route::get('', [ClientController::class, 'index']);
+        Route::get('{id}', [ClientController::class, 'show']);
     });
 
     Route::prefix('document-types')->group(function () {
-        Route::get('getDocumentTypes', [DocumentTypeController::class, 'getDocumentTypes']);
+        Route::get('', [DocumentTypeController::class, 'index']);
     });
 
 // rotte PRESTITI
     Route::prefix('loans')->group(function () {
-        Route::post('CreateLoan', [LoanController::class, 'CreateLoan']);
-        Route::patch('returnBookOrLoan', [LoanController::class, 'returnBookOrLoan']);
-        Route::get('loanIndex', [LoanController::class, 'loanIndex']);
-        Route::get('loanDetail/{id}', [LoanController::class, 'loanDetail']);
+        Route::post('', [LoanController::class, 'store']);
+        Route::patch('return', [LoanController::class, 'returnBookOrLoan']);
+        Route::get('', [LoanController::class, 'index']);
+        Route::get('{id}', [LoanController::class, 'show']);
     });
 
     // rotte AUTORI
     Route::prefix('authors')->group(function () {
-        Route::get('getAuthors', [AuthorController::class, 'getAuthors']);
+        Route::get('', [AuthorController::class, 'index']);
+        Route::post('', [AuthorController::class, 'store']);
     });
 
 // rotte EDITORI
     Route::prefix('editors')->group(function () {
-        Route::get('getEditors', [EditorController::class, 'getEditors']);
+        Route::get('', [EditorController::class, 'index']);
     });
 
 

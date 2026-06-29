@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class AuthorController extends Controller
 {
-    public function getAuthors(Request $request) {
+    public function index(Request $request) {
         $search = trim((string) $request->string('search'));
         $authorsQuery = Author::query();
 
@@ -26,5 +26,19 @@ class AuthorController extends Controller
         return response()->json([
             'authors' => $authors,
         ]);
+    }
+
+    public function store(Request $request) {
+        $validated = $request->validate([
+            'name' => 'required | string | max:50',
+            'last_name' => 'required | string | max:50',
+        ]);
+
+        $author = Author::create($validated);
+
+        return response()->json([
+            'author' => $author,
+            'message' => 'autore creato con successo',
+        ], 201);
     }
 }

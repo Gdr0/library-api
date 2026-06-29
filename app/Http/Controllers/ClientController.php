@@ -12,7 +12,7 @@ class ClientController extends Controller
         private ClientService $clientService,
     ) {}
 
-    public function CreateOrUpdateClient(Request $request) {
+    public function storeOrUpdate(Request $request) {
         $clientId = $request->integer('id') ?: null;
         $uniquePhoneNumber = 'unique:clients,phone_number'.($clientId ? ','.$clientId : '');
         $uniqueEmail = 'unique:clients,email'.($clientId ? ','.$clientId : '');
@@ -34,13 +34,13 @@ class ClientController extends Controller
         ], $isUpdated ? 200 : 201);
     }
 
-    public function clientIndex() {
+    public function index() {
         $clients = Client::paginate(10);
 
         return response()->json(['clients' => $clients]);
     }
 
-    public function getClientById($id) {
+    public function show($id) {
         $client = Client::findOrFail($id);
 
         return response()->json([

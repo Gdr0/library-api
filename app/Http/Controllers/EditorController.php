@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class EditorController extends Controller
 {
-    public function getEditors(Request $request) {
+    public function index(Request $request) {
         $search = trim((string) $request->string('search'));
         $editorsQuery = Editor::query();
 

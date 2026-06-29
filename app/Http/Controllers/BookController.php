@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
-    public function bookIndex() {
+    public function index() {
         $books = Book::with(['authors', 'editor', 'bookLoans.returns'])->paginate(10);
 
         return response()->json([
@@ -15,7 +15,7 @@ class BookController extends Controller
         ]);
     }
 
-    public function createOrUpdateBooks(Request $request) {
+    public function storeOrUpdate(Request $request) {
         $bookId = $request->integer('id') ?: null;
         $uniqueIsbn = 'unique:books,isbn'.($bookId ? ','.$bookId : '');
 
@@ -64,7 +64,7 @@ class BookController extends Controller
         ]);
     }
 
-    public function getBookById($id) {
+    public function show($id) {
         $book = Book::with(['authors', 'editor', 'bookLoans.returns'])->findOrFail($id);
 
         return response()->json([
