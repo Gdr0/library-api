@@ -13,15 +13,14 @@ return new class extends Migration
     {
         Schema::create('loans', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('status_id')->constrained('loan_statuses');
-            $table->foreignId('client_id')->constrained('clients');
-            $table->foreignId('document_type_id')->constrained('document_types');
-            $table->string('document_number');
-            $table->date('started_at');
-            $table->date('expiring_at');
-            $table->date('returned_at')->nullable();
-            $table->decimal('base_price', 10, 2)->default(0);
-            $table->decimal('total_price', 10, 2)->default(0);
+            $table->foreignId('status_id')->default(1)->constrained('loan_statuses'); // stato associato al prestito
+            $table->foreignId('client_id')->constrained('clients'); //id del cliente
+            $table->foreignId('document_type_id')->constrained('document_types'); // tipo documento
+            $table->string('document_number'); // numero documento fornito dal cliente per il prestito
+            $table->date('started_at'); // inizio prestito
+            $table->date('expiring_at'); //scadenza prestito (per tutti i libri)
+            $table->date('closed_at')->nullable(); //chiusura effettiva del prestito
+            $table->decimal('final_price', 10, 2)->default(0); // prezo finale del prestito - incluse more
             $table->softDeletes();
             $table->timestamps();
         });

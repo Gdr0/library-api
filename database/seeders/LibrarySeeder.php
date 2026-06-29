@@ -25,6 +25,7 @@ class LibrarySeeder extends Seeder
                         'editor_id' => $editors[$data['editor']],
                         'title' => $data['title'],
                         'synopsis' => $data['synopsis'],
+                        'daily_price' => 0.50,
                         'total_quantity' => $data['total_quantity'],
                     ],
                 );

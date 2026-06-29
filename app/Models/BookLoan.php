@@ -17,10 +17,19 @@ class BookLoan extends Model
         'quantity',
     ];
 
+    protected function casts(): array {
+        return [
+            'unit_price' => 'decimal:2',
+        ];
+    }
+
         public function book () {
             return $this->belongsTo(Book::class);
         }
         public function loan () {
             return $this->belongsTo(Loan::class);
+        }
+        public function returns () {
+            return $this->hasMany(BookLoanReturn::class);
         }
 }

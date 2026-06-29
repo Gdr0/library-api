@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('isbn')->unique();
             $table->string('synopsis');
+            $table->decimal('daily_price', 10,2); // prezzo giornaliero libro
             $table->unsignedInteger('total_quantity');
             $table->softDeletes();
             $table->timestamps();

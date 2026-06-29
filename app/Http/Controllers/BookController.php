@@ -25,6 +25,7 @@ class BookController extends Controller
             'title' => 'required | string | max:255',
             'isbn' => 'required | string | max:255 | '.$uniqueIsbn,
             'synopsis' => 'required | string | max:255',
+            'daily_price' => 'required | numeric | min:0',
             'total_quantity' => 'required | integer | min:0',
             'authors' => 'required | array | min:1',
             'authors.*' => 'required | integer | distinct | exists:authors,id',

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Loan extends Model
 {
-    
+
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -18,18 +18,16 @@ class Loan extends Model
         'document_number',
         'started_at',
         'expiring_at',
-        'returned_at',
-        'base_price',
-        'total_price',
+        'closed_at',
+        'final_price',
         ];
 
         protected function casts(): array {
             return [
                 'started_at' => 'date',
                 'expiring_at' => 'date',
-                'returned_at' => 'date',
-                'base_price' => 'decimal:2',
-                'total_price' => 'decimal:2',
+                'closed_at' => 'date',
+                'final_price' => 'decimal:2',
             ];
         }
 
@@ -48,6 +46,16 @@ class Loan extends Model
         }
         public function bookLoans() {
             return $this->hasMany(BookLoan::class);
+        }
+        public function bookLoanReturns() {
+            return $this->hasManyThrough(
+                BookLoanReturn::class,
+                BookLoan::class,
+                'loan_id',
+                'book_loan_id',
+                'id',
+                'id',
+            );
         }
         public function fine () {
             return $this->hasOne(LoanFine::class);

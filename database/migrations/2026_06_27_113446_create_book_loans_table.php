@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('book_id')->constrained('books');
             $table->foreignId('loan_id')->constrained('loans');
-            $table->decimal('unit_price', 10,2);
-            $table->integer('quantity');
+            $table->decimal('unit_price', 10, 2); // prezzo giornaliero del libro al momento del prestito
+            $table->integer('quantity'); // quantità dello specifico libro nel prestito
             // così lo stesso libro può comparire una sola volta nel prestito
             $table->unique(['loan_id', 'book_id']);
-
             $table->softDeletes();
             $table->timestamps();
         });

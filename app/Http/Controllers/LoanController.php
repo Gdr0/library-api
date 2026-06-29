@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\BookLoan;
+use App\Models\BookLoanReturn;
 use App\Models\Loan;
+use App\Services\LoanService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class LoanController extends Controller
 {
-    private const DAILY_BOOK_PRICE = 1;
+
+    public function __construct(
+        private LoanService $loanService,
+    ) {}
 
     // elenco prestiti
     public function loanIndex() {
@@ -20,12 +25,13 @@ class LoanController extends Controller
             'client',
             'status',
             'documentType',
-            'books.authors',
+            'bookLoans.book.authors',
+            'bookLoans.returns',
         ])->orderBy('created_at', 'desc')->paginate(10);
 
         return response()->json([
             'loans' => $loans,
-        ]);
+        ], 200);
     }
 
     // dettaglio singolo prestito
@@ -34,7 +40,8 @@ class LoanController extends Controller
             'client',
             'status',
             'documentType',
-            'books.authors',
+            'bookLoans.book.authors',
+            'bookLoans.returns',
             'fine',
         ])->findOrFail($id);
 
@@ -44,15 +51,23 @@ class LoanController extends Controller
     }
 
     public function CreateLoan(Request $request) {
+        $clientId = $request->integer('client_id');
+
         $validated = $request->validate([
-            'status_id' => 'required | integer | exists:loan_statuses,id',
-            'client_id' => 'required | integer | exists:clients,id',
+            // clienti
+            'client_id' => 'nullable | integer | exists:clients,id',
+            'client' => 'required | array',
+            'client.name' => 'required | string | max:25',
+            'client.last_name' => 'required | string | max:25',
+            'client.phone_number' => 'required | string | max:25 | unique:clients,phone_number,'.($clientId ?: 'NULL').',id',
+            'client.email' => 'required | string | email | max:255 | unique:clients,email,'.($clientId ?: 'NULL').',id',
+
+            // prestito
             'document_type_id' => 'required | integer | exists:document_types,id',
             'document_number' => 'required | string | max:255',
             'started_at' => 'required | date',
             'expiring_at' => 'required | date | after:started_at',
-
-            // libri
+            // libri del prestito
             'books' => 'required | array | min:1',
             'books.*.book_id' => 'required | integer | distinct | exists:books,id',
             'books.*.quantity' => 'required | integer | min:1',
@@ -60,28 +75,23 @@ class LoanController extends Controller
 
         // transazione per evitare danni se qualcosa va storto
         $loan = DB::transaction(function () use ($validated) {
-            // calcolo giorni del prestito
-            $loanDays = Carbon::parse($validated['started_at'])->diffInDays(Carbon::parse($validated['expiring_at']));
+            // aggiorno/creo cliente
+            $clientId = $this->loanService->resolveClientId($validated);
 
-            $basePrice = 0;
-            // definisco variabile prezzo base
-
+            // creo il prestito
             $loan = Loan::create([
-                'status_id' => $validated['status_id'],
-                'client_id' => $validated['client_id'],
+                'client_id' => $clientId,
                 'document_type_id' => $validated['document_type_id'],
                 'document_number' => $validated['document_number'],
                 'started_at' => $validated['started_at'],
                 'expiring_at' => $validated['expiring_at'],
-                'returned_at' => null,
-                'base_price' => 0,
-                'total_price' => 0,
+                'closed_at' => null,
             ]);
-
+            // ciclo i libri per vedere disponibilità e creare il record del singolo libro sul prestito, con il prezzo storico del giorno in cui è stato effetuato il prestito
             foreach ($validated['books'] as $bookData) {
                 $book = Book::findOrFail($bookData['book_id']);
                 // disponibiltà libri
-                $availableQuantity = $this->booksAvailability($book);
+                $availableQuantity = $this->loanService->booksAvailability($book);
 
                 if ($bookData['quantity'] > $availableQuantity) {
                     throw ValidationException::withMessages([
@@ -92,22 +102,12 @@ class LoanController extends Controller
                 BookLoan::create([
                     'loan_id' => $loan->id,
                     'book_id' => $book->id,
-                    'unit_price' => self::DAILY_BOOK_PRICE,
+                    'unit_price' => $book->daily_price,
                     'quantity' => $bookData['quantity'],
                 ]);
-
-                $bookPrice = self::DAILY_BOOK_PRICE * $loanDays;
-                $booksPrice = $bookPrice * $bookData['quantity'];
-
-                $basePrice = $basePrice + $booksPrice;
             }
-
-            $loan->update([
-                'base_price' => $basePrice,
-                'total_price' => $basePrice,
-            ]);
-
-            return $loan->load(['client','status','documentType','books']);
+            // esce $loan completo dalla closure
+            return $loan->load(['client', 'status', 'documentType', 'bookLoans.book', 'bookLoans.returns']);
         });
 
         return response()->json([
@@ -116,28 +116,88 @@ class LoanController extends Controller
         ], 201);
     }
 
-    // funzione per calcolare le copie disponibili 
-    private function booksAvailability(Book $book) {
-        $loanedQuantity = BookLoan::where('book_id', $book->id)->whereHas('loan', function ($query) {
-                $query->whereNull('returned_at');
-            })->sum('quantity');
+    public function returnBookOrLoan(Request $request){
 
-        return max(0, $book->total_quantity - $loanedQuantity);
-    }
-
-    public function returnLoan(Request $request ) {
         $validated = $request->validate([
-            'id_loan' => 'required | integer | exists:loans,id',
-            'returned_at' => 'required | date | before_or_equal:today',
+            'id_loan' => 'required|integer|exists:loans,id',
+            'returned_at' => 'required|date|before_or_equal:today',
+
+            'books' => 'required|array|min:1',
+            'books.*.book_id' => 'required|integer|distinct|exists:books,id',
+            'books.*.returned_quantity' => 'required|integer|min:1',
         ]);
 
-        $loan = Loan::findOrFail($validated['id_loan']);
+        $loan = DB::transaction(function () use ($validated) {
+            $loan = Loan::with(['bookLoans.returns', 'fine'])->lockForUpdate()->findOrFail($validated['id_loan']);
 
-        $loan->update(["returned_at" => $validated['returned_at']]);
+            $returnedAt = Carbon::parse($validated['returned_at']);
+
+            foreach ($validated['books'] as $returnedBook) {
+                $bookLoan = BookLoan::with('returns')->lockForUpdate()->where('loan_id', $loan->id)->where('book_id', $returnedBook['book_id'])->first();
+
+                if (! $bookLoan) {
+                    throw ValidationException::withMessages([
+                        'books' => 'Questo libro non appartiene al prestito selezionato.',
+                    ]);
+                }
+
+                $alreadyReturned = $bookLoan->returns->sum('returned_quantity');
+                $remaningQty = $bookLoan->quantity - $alreadyReturned;
+
+                if ($returnedBook['returned_quantity'] > $remaningQty) {
+                    throw ValidationException::withMessages([
+                        'books' => 'Più libri di quelli da consegnare',
+                    ]);
+                }
+
+                $loanDays = Carbon::parse($loan->started_at)->diffInDays($returnedAt);
+
+                if ($loanDays < 1) {
+                    $loanDays = 1;
+                }
+
+                $totalAtReturn = $bookLoan->unit_price * $returnedBook['returned_quantity'] * $loanDays;
+
+                BookLoanReturn::create([
+                    'book_loan_id' => $bookLoan->id,
+                    'returned_quantity' => $returnedBook['returned_quantity'],
+                    'returned_at' => $returnedAt,
+                    'total_at_return' => $totalAtReturn,
+                ]);
+            }
+
+        //  ricarico il prestito e controllo se è stato tutto riconsegnato
+        $loan->load(['bookLoans.returns', 'fine']);
+
+        // controllo se sono stati restituiti tutti i libri (ritorna booleano)
+        $allReturned = $this->loanService->allReturned($loan);
+        // calcola il consto totale alla restituzione per ogni libro e mi restituisce la somma
+        $totalAtReturn = $this->loanService->totalAtReturn($loan);
+        // vedo se ci sono more
+        $fineAmount = $loan->fine?->amount ?? 0;
+        // calcolo lo stato
+        $statusId = $this->loanService->loanStatusId($loan, $returnedAt, $allReturned);
+
+        $loan->update([
+            'status_id' => $statusId,
+            'closed_at' => $allReturned ? $returnedAt : null,
+            'final_price' => $allReturned ? $totalAtReturn + $fineAmount : 0,
+        ]);
+
+        return $loan->fresh([
+            'client',
+            'status',
+            'documentType',
+            'bookLoans.book',
+            'bookLoans.returns',
+            'fine',
+        ]);
+    });
 
         return response()->json([
             'loan' => $loan,
-            'message' => 'Prestito restituito correttamente'
-            ], 201);
+            'message' => 'Prestito restituito correttamente',
+        ], 200);
     }
+
 }

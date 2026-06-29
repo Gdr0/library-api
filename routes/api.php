@@ -35,7 +35,7 @@ Route::middleware('auth:api')->group(function () {
 // rotte PRESTITI
     Route::prefix('loans')->group(function () {
         Route::post('CreateLoan', [LoanController::class, 'CreateLoan']);
-        Route::patch('returnLoan', [LoanController::class, 'returnLoan']);
+        Route::patch('returnBookOrLoan', [LoanController::class, 'returnBookOrLoan']);
         Route::get('loanIndex', [LoanController::class, 'loanIndex']);
         Route::get('loanDetail/{id}', [LoanController::class, 'loanDetail']);
     });
