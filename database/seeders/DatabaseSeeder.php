@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DocumentTypeSeeder::class,
             ClientSeeder::class,
             LibrarySeeder::class,
+            OverdueLoanTestSeeder::class,
         ]);
     }
 }

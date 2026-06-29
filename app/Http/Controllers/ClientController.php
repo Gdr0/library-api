@@ -13,6 +13,9 @@ class ClientController extends Controller
     ) {}
 
     public function storeOrUpdate(Request $request) {
+// costruisce dinamicamente le regole unique
+// update: id cliente corrente viene escluso dalla verifica così email e numero di telefono già associati allo stesso cliente non generano errore.
+// create: viene applicato unique alla colonna
         $clientId = $request->integer('id') ?: null;
         $uniquePhoneNumber = 'unique:clients,phone_number'.($clientId ? ','.$clientId : '');
         $uniqueEmail = 'unique:clients,email'.($clientId ? ','.$clientId : '');

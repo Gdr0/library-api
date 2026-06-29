@@ -20,7 +20,7 @@ class LoanService
         )->id;
     }
 
-    // funzione per calcolare le copie disponibili
+    // La disponibilità viene calcolata sottraendo dalle copie totali solo quelle ancora non restituite.
     public function booksAvailability(Book $book) {
         $bookStillOut = $book->bookLoans()
             ->withSum('returns', 'returned_quantity')
@@ -35,6 +35,7 @@ class LoanService
         return max(0, $book->total_quantity - $loanedQuantity);
     }
 
+    // per vedere se sono tutti restituiti
     public function allReturned(Loan $loan): bool {
 
         foreach ($loan->bookLoans as $bookLoan) {
@@ -48,6 +49,7 @@ class LoanService
         return true;
     }
 
+    // totale alla restituzione
     public function totalAtReturn(Loan $loan): float {
 
         $totalAtReturn = 0;
@@ -59,6 +61,7 @@ class LoanService
         return $totalAtReturn;
     }
 
+    // lo stato finale dipende da scadenza e da quanto è stato restituito
     public function loanStatusId(Loan $loan, Carbon $returnedAt, bool $allReturned): int {
 
         if ($allReturned && $returnedAt->gt(Carbon::parse($loan->expiring_at))) {

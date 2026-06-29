@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('isbn')->unique();
             $table->string('synopsis');
             $table->decimal('daily_price', 10,2); // prezzo giornaliero libro
-            $table->unsignedInteger('total_quantity');
+            $table->unsignedInteger('total_quantity'); // copie totali possedute dalla biblioteca
             $table->softDeletes();
             $table->timestamps();
         });

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('book_loan_id')->constrained('book_loans');
             $table->integer('returned_quantity'); // quantità rientrata in questo specifico evento di restituzione
-            $table->date('returned_at'); // data del singolo rientro
-            $table->decimal('total_at_return', 10, 2)->default(0); // totale maturato al momento di questo rientro
+            $table->date('returned_at'); // data singola restituzione
+            $table->decimal('total_at_return', 10, 2)->default(0); // totale maturato al momento di restituzione
             $table->timestamps();
         });
     }

@@ -27,6 +27,7 @@ class LoanController extends Controller
             'documentType',
             'bookLoans.book.authors',
             'bookLoans.returns',
+            'fine',
         ])->orderBy('created_at', 'desc')->paginate(10);
 
         return response()->json([
@@ -73,12 +74,11 @@ class LoanController extends Controller
             'books.*.quantity' => 'required | integer | min:1',
         ]);
 
-        // transazione per evitare danni se qualcosa va storto
+        // tutto questo deve andare insieme, se salta un pezzo non devo ritrovarmi un prestito mezzo salvato
         $loan = DB::transaction(function () use ($startedAt, $validated) {
             // aggiorno/creo cliente
             $clientId = $this->loanService->resolveClientId($validated);
 
-            // creo il prestito
             $loan = Loan::create([
                 'client_id' => $clientId,
                 'document_type_id' => $validated['document_type_id'],
@@ -87,7 +87,8 @@ class LoanController extends Controller
                 'expiring_at' => $validated['expiring_at'],
                 'closed_at' => null,
             ]);
-            // ciclo i libri per vedere disponibilità e creare il record del singolo libro sul prestito, con il prezzo storico del giorno in cui è stato effetuato il prestito
+
+            // Ogni record in book_loans rappresenta un libro incluso nel prestito, con quantità e prezzo storico registrati al momento della creazione
             foreach ($validated['books'] as $bookData) {
                 $book = Book::findOrFail($bookData['book_id']);
                 // disponibiltà libri
@@ -120,18 +121,20 @@ class LoanController extends Controller
 
         $validated = $request->validate([
             'id_loan' => 'required|integer|exists:loans,id',
-            'returned_at' => 'required|date|before_or_equal:today',
 
             'books' => 'required|array|min:1',
             'books.*.book_id' => 'required|integer|distinct|exists:books,id',
             'books.*.returned_quantity' => 'required|integer|min:1',
         ]);
 
+        // transazione necessatia per coerenza, non può essere parziale il salvataggio
         $loan = DB::transaction(function () use ($validated) {
             $loan = Loan::with(['bookLoans.returns', 'fine'])->lockForUpdate()->findOrFail($validated['id_loan']);
 
-            $returnedAt = Carbon::parse($validated['returned_at']);
+            $returnedAt = Carbon::today();
+            $lastReturn = null;
 
+            // La restituzione viene registrata sul record book_loan specifico, perché lo stesso libro può comparire in prestiti diversi
             foreach ($validated['books'] as $returnedBook) {
                 $bookLoan = BookLoan::with('returns')->lockForUpdate()->where('loan_id', $loan->id)->where('book_id', $returnedBook['book_id'])->first();
 
@@ -150,6 +153,7 @@ class LoanController extends Controller
                     ]);
                 }
 
+                // Il totale maturato alla restituzione dipende dai giorni trascorsi dall'inizio del prestito, con un minimo di 1 giorno.
                 $loanDays = Carbon::parse($loan->started_at)->diffInDays($returnedAt);
 
                 if ($loanDays < 1) {
@@ -158,7 +162,7 @@ class LoanController extends Controller
 
                 $totalAtReturn = $bookLoan->unit_price * $returnedBook['returned_quantity'] * $loanDays;
 
-                BookLoanReturn::create([
+                $lastReturn = BookLoanReturn::create([
                     'book_loan_id' => $bookLoan->id,
                     'returned_quantity' => $returnedBook['returned_quantity'],
                     'returned_at' => $returnedAt,
@@ -171,17 +175,29 @@ class LoanController extends Controller
 
         // controllo se sono stati restituiti tutti i libri (ritorna booleano)
         $allReturned = $this->loanService->allReturned($loan);
-        // calcola il consto totale alla restituzione per ogni libro e mi restituisce la somma
-        $totalAtReturn = $this->loanService->totalAtReturn($loan);
         // vedo se ci sono more
         $fineAmount = $loan->fine?->amount ?? 0;
+
+        // Ad ogni rientro salviamo subito il costo maturato di quel libro in total_at_return
+        // La mora del prestito, invece, resta separata in loan_fines e viene sommata solo all'ultima restituzione, quando il backend consolida il totale finale. Nel frontend
+        // mostriamo comunque totale dovuto a oggi calcolato live
+        if ($allReturned && $fineAmount > 0 && $lastReturn) {
+            $lastReturn->update([
+                'total_at_return' => $lastReturn->total_at_return + $fineAmount,
+            ]);
+
+            $loan->load('bookLoans.returns');
+        }
+
+        // calcola il totale incassato, comprensivo della mora in caso di chiusura
+        $totalAtReturn = $this->loanService->totalAtReturn($loan);
         // calcolo lo stato
         $statusId = $this->loanService->loanStatusId($loan, $returnedAt, $allReturned);
 
         $loan->update([
             'status_id' => $statusId,
             'closed_at' => $allReturned ? $returnedAt : null,
-            'final_price' => $allReturned ? $totalAtReturn + $fineAmount : 0,
+            'final_price' => $allReturned ? $totalAtReturn : 0,
         ]);
 
         return $loan->fresh([
