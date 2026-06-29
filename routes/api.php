@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EditorController;
 use App\Http\Controllers\LoanController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,10 @@ Route::middleware('auth:api')->group(function () {
         Route::post('CreateOrUpdateClient', [ClientController::class, 'CreateOrUpdateClient']);
         Route::get('clientIndex', [ClientController::class, 'clientIndex']);
         Route::get('getClientById/{id}', [ClientController::class, 'getClientById']);
+    });
+
+    Route::prefix('document-types')->group(function () {
+        Route::get('getDocumentTypes', [DocumentTypeController::class, 'getDocumentTypes']);
     });
 
 // rotte PRESTITI

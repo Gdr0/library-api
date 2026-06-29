@@ -10,6 +10,10 @@ class Book extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = [
+        'occupied_quantity',
+    ];
+
     protected $fillable = [
         'editor_id',
         'title',
@@ -55,6 +59,13 @@ class Book extends Model
             'id',
             'id',
         );
+    }
+
+    public function getOccupiedQuantityAttribute(): int
+    {
+        return $this->bookLoans->sum(function (BookLoan $bookLoan) {
+            return max(0, $bookLoan->quantity - $bookLoan->returned_books_quantity);
+        });
     }
 
 

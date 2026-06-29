@@ -11,6 +11,12 @@ class Loan extends Model
 
     use HasFactory, SoftDeletes;
 
+    protected $appends = [
+        'loan_books_quantity',
+        'returned_books_quantity',
+        'total_at_return',
+    ];
+
     protected $fillable = [
         'status_id',
         'client_id',
@@ -59,6 +65,21 @@ class Loan extends Model
         }
         public function fine () {
             return $this->hasOne(LoanFine::class);
+        }
+
+        public function getLoanBooksQuantityAttribute(): int
+        {
+            return $this->bookLoans->sum('quantity');
+        }
+
+        public function getReturnedBooksQuantityAttribute(): int
+        {
+            return $this->bookLoans->sum('returned_books_quantity');
+        }
+
+        public function getTotalAtReturnAttribute(): float
+        {
+            return (float) $this->bookLoans->sum('total_at_return');
         }
 
 }

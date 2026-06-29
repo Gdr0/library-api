@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class BookController extends Controller
 {
     public function bookIndex() {
-        $books = Book::with(['authors', 'editor'])->paginate(10);
+        $books = Book::with(['authors', 'editor', 'bookLoans.returns'])->paginate(10);
 
         return response()->json([
             'books' => $books,
@@ -40,7 +40,7 @@ class BookController extends Controller
             $book->authors()->sync($authors);
 
             return response()->json([
-                'book' => $book->load(['authors', 'editor']),
+                'book' => $book->load(['authors', 'editor', 'bookLoans.returns']),
                 'message' => 'Book updated successfully',
             ]);
         }
@@ -49,7 +49,7 @@ class BookController extends Controller
         $book->authors()->sync($authors);
 
         return response()->json([
-            'book' => $book->load(['authors', 'editor']),
+            'book' => $book->load(['authors', 'editor', 'bookLoans.returns']),
             'message' => 'Book created successfully',
         ], 201);
     }
@@ -65,7 +65,7 @@ class BookController extends Controller
     }
 
     public function getBookById($id) {
-        $book = Book::with(['authors', 'editor'])->findOrFail($id);
+        $book = Book::with(['authors', 'editor', 'bookLoans.returns'])->findOrFail($id);
 
         return response()->json([
             'book' => $book,

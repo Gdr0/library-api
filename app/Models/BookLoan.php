@@ -10,6 +10,11 @@ class BookLoan extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = [
+        'returned_books_quantity',
+        'total_at_return',
+    ];
+
     protected $fillable = [
         'book_id',
         'loan_id',
@@ -31,5 +36,15 @@ class BookLoan extends Model
         }
         public function returns () {
             return $this->hasMany(BookLoanReturn::class);
+        }
+
+        public function getReturnedBooksQuantityAttribute(): int
+        {
+            return $this->returns->sum('returned_quantity');
+        }
+
+        public function getTotalAtReturnAttribute(): float
+        {
+            return (float) $this->returns->sum('total_at_return');
         }
 }

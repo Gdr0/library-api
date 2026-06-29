@@ -107,7 +107,7 @@ class LoanController extends Controller
                 ]);
             }
             // esce $loan completo dalla closure
-            return $loan->load(['client', 'status', 'documentType', 'bookLoans.book', 'bookLoans.returns']);
+            return $loan->load(['client', 'status', 'documentType', 'bookLoans.book.authors', 'bookLoans.returns']);
         });
 
         return response()->json([
@@ -188,7 +188,7 @@ class LoanController extends Controller
             'client',
             'status',
             'documentType',
-            'bookLoans.book',
+            'bookLoans.book.authors',
             'bookLoans.returns',
             'fine',
         ]);
