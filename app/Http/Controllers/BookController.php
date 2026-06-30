@@ -18,11 +18,9 @@ class BookController extends Controller
 
             foreach ($words as $word) {
                 $booksQuery->where(function ($query) use ($word) {
-                    $query
-                        ->where('title', 'like', '%'.$word.'%')
+                    $query->where('title', 'like', '%'.$word.'%')
                         ->orWhereHas('authors', function ($authorQuery) use ($word) {
-                            $authorQuery
-                                ->where('name', 'like', '%'.$word.'%')
+                            $authorQuery->where('name', 'like', '%'.$word.'%')
                                 ->orWhere('last_name', 'like', '%'.$word.'%');
                         });
                 });
