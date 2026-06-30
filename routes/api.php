@@ -6,6 +6,7 @@ use App\Http\Controllers\BookController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EditorController;
+use App\Http\Controllers\GenreController;
 use App\Http\Controllers\LoanController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,10 @@ Route::middleware('auth:api')->group(function () {
 // rotte EDITORI
     Route::prefix('editors')->group(function () {
         Route::get('', [EditorController::class, 'index']);
+    });
+
+    Route::prefix('genres')->group(function () {
+        Route::get('', [GenreController::class, 'index']);
     });
 
 

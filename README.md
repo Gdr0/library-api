@@ -9,19 +9,42 @@ composer install
 cp .env.example .env
 ```
 
-A questo punto va creato un database locale e va configurata la connessione dentro il file `.env`, inserendo i parametri corretti in base al proprio ambiente.
+A questo punto va configurata la connessione MySQL dentro il file `.env` con questi valori:
 
-Dopo la configurazione del database:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=library
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Prima di eseguire le migration bisogna collegarsi al server MySQL locale su `127.0.0.1:3306` con il proprio client e creare il database `library`.
+
+Esempio query:
+
+```sql
+CREATE DATABASE library CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Dopo la creazione del database:
 
 ```bash
 php artisan key:generate
 php artisan jwt:secret
+php artisan migrate
 php artisan migrate:fresh --seed
 php artisan serve
 php artisan schedule:work
 ```
 
 L'API sarà disponibile in locale su `http://localhost:8000/`.
+
+Gli utenti da utilizzare dopo il seed sono definiti in [database/seeders/UserSeeder.php](/Volumes/Archivio macmini/library-api/database/seeders/UserSeeder.php):
+
+- mario.rossi@example.com,Password123
+- luigi.verdi@example.com,Password123
 
 ## Note
 
